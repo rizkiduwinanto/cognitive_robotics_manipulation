@@ -25,9 +25,10 @@ class GrasppingScenarios():
             self.network_path = 'trained_models/GR_ConvNet/cornell-randsplit-rgbd-grconvnet3-drop1-ch32/epoch_19_iou_0.98'
             sys.path.append('trained_models/GR_ConvNet')
         else:
-            # you need to add your network here!
-            print("The selected network has not been implemented yet!")
-            exit() 
+            ##### GGCNN #####
+            self.IMG_SIZE = 224
+            self.network_path = 'trained_models/ggcnn/ggcnn_weights_cornell/ggcnn_epoch_23_cornell_statedict.pt'
+            sys.path.append('trained_models/GGCNN')
         
         
         self.CAM_Z = 1.9

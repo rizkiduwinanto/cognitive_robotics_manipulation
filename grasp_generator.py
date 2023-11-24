@@ -4,15 +4,20 @@ from numpy.lib.npyio import save
 import torch.utils.data
 from PIL import Image
 from datetime import datetime
+import sys
 
 from network.hardware.device import get_device
-#from network.inference.post_process import post_process_output
+# from network.inference.post_process import post_process_output
 from network.utils.data.camera_data import CameraData
 from network.utils.visualisation.plot import plot_results
 from network.utils.dataset_processing.grasp import detect_grasps
 from skimage.filters import gaussian
 import os
 import cv2
+
+sys.path.append('/mnt/c/Users/rizki/Master Files/cognitive_robotics_manipulation/trained_models/ggcnn/models')
+
+from ggcnn import GGCNN
 
 class GraspGenerator:
     IMG_WIDTH = 224
@@ -36,6 +41,10 @@ class GraspGenerator:
 
         # print (self.net)
 
+        if (network == 'GGCNN'):
+            self.model = GGCNN().to(device)
+            self.model.load_state_dict(self.net)
+            self.model.eval()
         
         self.near = camera.near
         self.far = camera.far
@@ -134,7 +143,7 @@ class GraspGenerator:
         depth = depth * (255 / max_val)
         depth = np.clip((depth - depth.mean())/175, -1, 1)
         
-        if (self.network == 'GR_ConvNet'):
+        if (self.network == 'GR_ConvNet' or self.network == 'GGCNN'):
             ##### GR-ConvNet #####
             depth = np.expand_dims(np.array(depth), axis=2)
             img_data = CameraData(width=self.IMG_WIDTH, height=self.IMG_WIDTH)
@@ -149,7 +158,7 @@ class GraspGenerator:
             if (self.network == 'GR_ConvNet'):
                 ##### GR-ConvNet #####
                 pred = self.net.predict(xc)
-                # print (pred)
+                print (pred)
                 pixels_max_grasp = int(self.MAX_GRASP * self.PIX_CONVERSION)
                 q_img, ang_img, width_img = self.post_process_output(pred['pos'],
                                                                 pred['cos'],
@@ -157,7 +166,16 @@ class GraspGenerator:
                                                                 pred['width'],
                                                                 pixels_max_grasp)
             else: 
-                print ("you need to add your function here!")        
+                ##### GGCNN #####
+                input = xc[:, :1, :, :]
+                pred = self.model.predict(input)
+                # print (pred)
+                pixels_max_grasp = int(self.MAX_GRASP * self.PIX_CONVERSION)
+                q_img, ang_img, width_img = self.post_process_output(pred['pos'],
+                                                                pred['cos'],
+                                                                pred['sin'],
+                                                                pred['width'],
+                                                                pixels_max_grasp)
         
         save_name = None
         if show_output:
